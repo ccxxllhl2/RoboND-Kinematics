@@ -2,6 +2,7 @@ from sympy import *
 from time import time
 from mpmath import radians
 import tf
+import numpy as np
 
 '''
 Format of test case is [ [[EE position],[EE orientation as quaternions]],[WC location],[joint angles]]
@@ -24,6 +25,39 @@ test_cases = {1:[[[2.16135,-1.42635,1.55109],
                   [-2.99,-0.12,0.94,4.06,1.29,-4.12]],
               4:[],
               5:[]}
+
+# Rotation matrix along x axis
+def rot_x(q):
+    R_x = Matrix([[1, 0, 0],
+                  [0, cos(q), -sin(q)],
+                  [0, sin(q), cos(q)]])
+
+    return R_x
+
+
+# Rotation matrix along y axis
+def rot_y(q):
+    R_y = Matrix([[cos(q), 0, sin(q)],
+                  [0, 1, 0],
+                  [-sin(q), 0, cos(q)]])
+
+    return R_y
+
+
+# Rotation matrix along z axis
+def rot_z(q):
+    R_z = Matrix([[cos(q), -sin(q), 0],
+                  [sin(q), cos(q), 0],
+                  [0, 0, 1]])
+
+    return R_z
+
+def homo_tf(alpha, a, d, q):
+    TM =   Matrix([[            cos(q),           -sin(q),           0,             a],
+                   [ sin(q)*cos(alpha), cos(q)*cos(alpha), -sin(alpha), -sin(alpha)*d],
+                   [ sin(q)*sin(alpha), cos(q)*sin(alpha),  cos(alpha),  cos(alpha)*d],
+                   [                 0,                 0,           0,             1]])
+    return(TM)
 
 
 def test_code(test_case):
@@ -64,12 +98,114 @@ def test_code(test_case):
 
     ## Insert IK code here!
     
-    theta1 = 0
-    theta2 = 0
-    theta3 = 0
-    theta4 = 0
-    theta5 = 0
-    theta6 = 0
+    # IK code starts here
+    # joint_trajectory_point = JointTrajectoryPoint()
+
+    # Extract end-effector position and orientation from request
+    # px,py,pz = end-effector position
+    # roll, pitch, yaw = end-effector orientation
+    
+    q1, q2, q3, q4, q5, q6, q7 = symbols('q1:8')
+    d1, d2, d3, d4, d5, d6, d7 = symbols('d1:8')
+    a0, a1, a2, a3, a4, a5, a6 = symbols('a0:7')
+    alpha0, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6 = symbols('alpha0:7')
+    r, p, y = symbols("r, p, y")
+    # Create Modified DH parameters
+    s = {alpha0:	    0, a0:      0, d1: 0.75,
+    	 alpha1: 	-pi/2, a1:   0.35, d2:    0, q2: q2-pi/2,
+     	 alpha2:        0, a2:	 1.25, d3:    0,
+      	 alpha3: 	-pi/2, a3: -0.054, d4:  1.5,
+    	 alpha4:	 pi/2, a4:	 	0, d5:	  0,
+    	 alpha5:	-pi/2, a5:      0, d6:	  0,
+    	 alpha6:        0, a6:      0, d7:0.303, q7:0}
+    # Create individual transformation matrices
+    T0_1 = homo_tf(alpha0, a0, d1, q1)
+    T0_1 = T0_1.subs(s)
+
+    T1_2 = homo_tf(alpha1, a1, d2, q2)
+    T1_2 = T1_2.subs(s)
+
+    T2_3 = homo_tf(alpha2, a2, d3, q3)
+    T2_3 = T2_3.subs(s)
+
+    T3_4 = homo_tf(alpha3, a3, d4, q4)
+    T3_4 = T3_4.subs(s)
+
+    T4_5 = homo_tf(alpha4, a4, d5, q5)
+    T4_5 = T4_5.subs(s)
+
+    T5_6 = homo_tf(alpha5, a5, d6, q6)
+    T5_6 = T5_6.subs(s)
+
+    T6_G = homo_tf(alpha6, a6, d7, q7)
+    T6_G = T6_G.subs(s)
+
+    T0_2 = simplify(T0_1 * T1_2)
+    T0_3 = simplify(T0_2 * T2_3)
+    
+    px = req.poses[x].position.x
+    py = req.poses[x].position.y
+    pz = req.poses[x].position.z
+
+    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(
+        [req.poses[x].orientation.x, req.poses[x].orientation.y,
+            req.poses[x].orientation.z, req.poses[x].orientation.w])
+
+    # Calculate joint angles using Geometric IK method
+    P_ee = Matrix([[px], [py], [pz]])
+    R_corr = rot_z(pi) * rot_y(-pi / 2)
+    
+    R_z = rot_z(yaw)
+    R_y = rot_y(pitch)
+    R_x = rot_x(roll)
+    Rrpy = rot_z(yaw) * rot_y(pitch) * rot_x(roll)* R_corr
+
+    # Calculate wrist center
+    P_wc = P_ee - Rrpy * Matrix([[0],[0],[s[d7]]])
+    Wc_x, Wc_y, Wc_z =  P_wc[0], P_wc[1] , P_wc[2]
+
+    # Calculate theta1
+    theta1 = atan2(Wc_y,Wc_x)
+
+    # Calculate theta3
+    s1 = sqrt(Wc_x**2 + Wc_y**2) - s[a1]
+    s2 = Wc_z - s[d1]
+    s3 = sqrt(s1**2 + s2**2)
+    s4 = sqrt(s[d4]**2 + s[a3]**2)
+    
+    beta1 = atan2(s2, s1)
+    cos_for_beta2 = (s[a2]**2 + s3**2 - s4**2) / (2*s[a2]*s3)
+    beta2 = atan2(sqrt(1 - cos_for_beta2**2), cos_for_beta2)
+    theta2 = pi/2 - beta2 - beta1
+
+    # Intermediate angles for theta3
+    cos_for_beta3 = (s[a2]**2 + s4**2 -s3**2) / (2*s[a2]*s4)
+    beta3 = atan2(sqrt(1-cos_for_beta3**2), cos_for_beta3)
+    beta4 = atan2(-s[a3], s[d4])
+    theta3 = pi/2 - beta3 - beta4
+
+    R0_3 = T0_3[0:3, 0:3]
+    R0_3 = R0_3.evalf(subs={q1: theta1, q2: theta2, q3: theta3})
+    R0_3_INV = R0_3.inv("LU")
+    R3_6 = R0_3_INV * Rrpy
+
+    # Individual Rotation Matrix elements for theta4 theta5 and theta6 calculations
+    r12 = R3_6[0, 1]
+    r13 = R3_6[0, 2]
+    r21 = R3_6[1, 0]
+    r22 = R3_6[1, 1]
+    r23 = R3_6[1, 2]
+    r32 = R3_6[2, 1]
+    r33 = R3_6[2, 2]
+
+    theta5 = atan2(sqrt(r13**2 + r33**2), r23)
+    if sin(theta5) < 0:
+        theta4 = atan2(-r33, r13)
+        theta6 = atan2(r22, -r21)
+    else:
+        theta4 = atan2(r33, -r13)
+        theta6 = atan2(-r22, r21)
+
 
     ## 
     ########################################################################################
@@ -79,13 +215,33 @@ def test_code(test_case):
     ## as the input and output the position of your end effector as your_ee = [x,y,z]
 
     ## (OPTIONAL) YOUR CODE HERE!
+    
+    
+    ry =   Matrix([[ cos(pi/2),  0, sin(pi/2),0],
+           [         0,  1,         0,0],
+           [-sin(pi/2),  0, cos(pi/2),0],
+           [         0,  0,         0,1]]) 
 
+    rz =   Matrix([[  cos(pi), -sin(pi), 0,0],
+           [  sin(pi),  cos(pi), 0,0],
+           [        0,        0, 1,0],
+           [        0,        0, 0,1]])
+    
+    T_corr = simplify(rz*ry)
+    T0_G = T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_G
+    T_t = T0_G * T_corr
+    
+    ee = T_t.evalf(subs={q1: theta1, q2: theta2, q3: theta3, q4: theta4, q5: theta5, q6: theta6})
+    ee_x = ee[0,3]
+    ee_y = ee[1,3]
+    ee_z = ee[2,3]
+    
     ## End your code input for forward kinematics here!
     ########################################################################################
 
     ## For error analysis please set the following variables of your WC location and EE location in the format of [x,y,z]
-    your_wc = [1,1,1] # <--- Load your calculated WC values in this array
-    your_ee = [1,1,1] # <--- Load your calculated end effector value from your forward kinematics
+    your_wc = [P_wc[0],P_wc[1],P_wc[2]] # <--- Load your calculated WC values in this array
+    your_ee = [ee_x,ee_y,ee_z] # <--- Load your calculated end effector value from your forward kinematics
     ########################################################################################
 
     ## Error analysis
@@ -116,8 +272,8 @@ def test_code(test_case):
     print ("Theta 5 error is: %04.8f" % t_5_e)
     print ("Theta 6 error is: %04.8f" % t_6_e)
     print ("\n**These theta errors may not be a correct representation of your code, due to the fact \
-           \nthat the arm can have muliple positions. It is best to add your forward kinmeatics to \
-           \nconfirm whether your code is working or not**")
+            \nthat the arm can have muliple positions. It is best to add your forward kinmeatics to \
+            \nconfirm whether your code is working or not**")
     print (" ")
 
     # Find FK EE error

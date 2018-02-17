@@ -27,6 +27,7 @@
 [image8]: ./misc_images/theta3.png
 [image9]: ./misc_images/rr.png
 [image10]: ./misc_images/R36.png
+[image11]: ./misc_images/error.png
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/972/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -90,5 +91,8 @@ Next use the rotation matrix to calculate the last joint variables(theta4, theta
 
 #### 1. Fill in the `IK_server.py` file with properly commented python code for calculating Inverse Kinematics based on previously performed Kinematic Analysis. Your code must guide the robot to successfully complete 8/10 pick and place cycles. Briefly discuss the code you implemented and your results. 
 
-In the IK\_server.py, T0_3 is the only T parameter we need to get R0_3 in the IK for loop, so I remove others. Then use inv R0_3 to get R0_6.
-Also the arm will not work so currectly because of the error. I'll do more test about the key joint theta5.
+The code will be departed in 3 section.  
+* The first section is to set some function as like rot function for calculate Rotation Matrix with x,y and z axis, and also there is a function to caculate the Homogeneous Transforms Matrix.  
+* The second section is the Forward Kinematic, that's mean is I should set functions to get position(coordinates) by rotaton angle. In this section, I get DH parameters from UDRF file and set them to be symbols. T0_3 is a usable variable of next section so I calculate it here.
+The third section is the Inverse Kinematic, that's mean get angle based on position here. In this section, I use knowledge described up to get theta1-3 and calculate rotation matrix R0_3, then Inv R0_3 get R3_6. Finally get all 6 theta. Utilize IK_debug.py, I make the error to be not very high. It's very important to separate when theta5>0 and theta5<0. Different pose will get same position but different error. If we can define the pose of joint5, we'll know the pose of joint4.
+![alt text][image11]
