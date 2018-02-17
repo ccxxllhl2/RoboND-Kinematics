@@ -71,6 +71,7 @@ sin(q2) |  cos(q2) |  0 |  0.350000000000000
 0 |  0 |  1 |  0 
 cos(q2) |  -sin(q2) |  0 |  0 
 0 |  0 |  0 |  1
+
 The transformation matrices for joint 2->3
 
 --- | --- | --- | ---
@@ -79,6 +80,7 @@ cos(q3) |  -sin(q3) |  0 |  1.25000000000000
 sin(q3) |  cos(q3) |  0 |  0 
 0 |  0 |  1 |  0 
 0 |  0 |  0 |  1
+
 The transformation matrices for joint 3->4
 
 --- | --- | --- | ---
@@ -87,6 +89,7 @@ cos(q4) |  -sin(q4) |  0 |  -0.0540000000000000
 0 |  0 |  1 |  1.50000000000000 
 -sin(q4) |  -cos(q4) |  0 |  0 
 0 |  0 |  0 |  1
+
 The transformation matrices for joint 4->5
 
 --- | --- | --- | ---
@@ -95,6 +98,7 @@ cos(q5) |  -sin(q5) |  0 |  0
 0 |  0 |  -1 |  0 
 sin(q5) |  cos(q5) |  0 |  0 
 0 |  0 |  0 |  1
+
 The transformation matrices for joint 5->6
 
 --- | --- | --- | ---
@@ -103,6 +107,7 @@ cos(q6) |  -sin(q6) |  0 |  0
 0 |  0 |  1 |  0 
 -sin(q6) |  -cos(q6) |  0 |  0 
 0 |  0 |  0 |  1
+
 The transformation matrices for joint 6->G
 
 --- | --- | --- | ---
@@ -111,6 +116,7 @@ The transformation matrices for joint 6->G
 0 |  1 |  0 |  0 
 0 |  0 |  1 |  0.303000000000000 
 0 |  0 |  0 |  1
+
 The homogeneous transform between base_link and gripper_link(T0_G with all peremeters 'q' be 0)
 
 --- | --- | --- | ---
