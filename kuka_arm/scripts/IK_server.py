@@ -19,6 +19,8 @@ from mpmath import *
 from sympy import *
 import numpy as np
 
+###################################################################### First Section #####################################################################
+
 def rot_x(angle):
     rx =   Matrix([[ 1,         0,            0],
                    [ 0, cos(angle), -sin(angle)],
@@ -43,7 +45,9 @@ def homo_tf(alpha, a, d, q):
                    [ sin(q)*sin(alpha), cos(q)*sin(alpha),  cos(alpha),  cos(alpha)*d],
                    [                 0,                 0,           0,             1]])
     return(TM)
-
+    
+###################################################################### Second Section #####################################################################
+    
 def handle_calculate_IK(req):
     rospy.loginfo("Received %s eef-poses from the plan" % len(req.poses))
     if len(req.poses) < 1:
@@ -86,8 +90,9 @@ def handle_calculate_IK(req):
         T6_G = T6_G.subs(s)
 
         T0_3 = simplify(T0_1 * T1_2 * T2_3)
-
-
+        
+###################################################################### Trird Section #####################################################################
+        
         # Initialize service response
         
         joint_trajectory_list = []
