@@ -183,11 +183,12 @@ def test_code(test_case):
     beta3 = atan2(sqrt(1-cos_for_beta3**2), cos_for_beta3)
     beta4 = atan2(-s[a3], s[d4])
     theta3 = pi/2 - beta3 - beta4
-
-    R0_3 = T0_3[0:3, 0:3]
+    theta1, theta2, theta3 = np.float64(theta1), np.float64(theta2), np.float64(theta3)
+    R0_3 = T0_3.inv("LU")
+    R0_3 = R0_3[0:3, 0:3]
     R0_3 = R0_3.evalf(subs={q1: theta1, q2: theta2, q3: theta3})
-    R0_3_INV = R0_3.inv("LU")
-    R3_6 = R0_3_INV * Rrpy
+    
+    R3_6 = R0_3 * Rrpy
 
     # Individual Rotation Matrix elements for theta4 theta5 and theta6 calculations
     r12 = R3_6[0, 1]
@@ -205,7 +206,7 @@ def test_code(test_case):
     else:
         theta4 = atan2(r33, -r13)
         theta6 = atan2(-r22, r21)
-
+    theta4, theta5, theta6 = np.float64(theta4), np.float64(theta5), np.float64(theta6)
 
     ## 
     ########################################################################################

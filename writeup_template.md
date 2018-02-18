@@ -43,6 +43,8 @@ You can see the picture of Gazebo as like below.
 ### Kinematic Analysis
 #### 1. Kinematic analysis always include two step, the Forward Kinematic and the Inverse Kinematic. to perform the Forward Kinematic analysis of Kuka KR210 robot I need to derive its DH parameters. In this section, I'll get how DH parameters assignment and how many they are. 
 
+You can get some information here [FK and IK](http://www.cs.cmu.edu/~15464-s13/lectures/lecture6/IK.pdf), and here [Computation Detail](http://www.cs.columbia.edu/~allen/F15/NOTES/jacobians.pdf)
+
 I derived the DH parameters from the below axis assignments in the pic I've drew.
 ![alt text][image2]
 
@@ -146,10 +148,19 @@ Next use the rotation matrix and first 3 theta to calculate the last joint varia
 
 ### Project Implementation
 
-#### 1. Fill in the `IK_server.py` file with properly commented python code for calculating Inverse Kinematics based on previously performed Kinematic Analysis. Your code must guide the robot to successfully complete 8/10 pick and place cycles. Briefly discuss the code you implemented and your results. 
+#### 1. White IK_server.py file such that syetem will take the Inverse Kinematic caculation process.  Then do optimization and play with the error.
 
 The code will be departed in 3 section.  
-* The first section is to set some function as like rot function for calculate Rotation Matrix with x,y and z axis, and also there is a function to caculate the Homogeneous Transforms Matrix.  
-* The second section is the Forward Kinematic, that's mean is I should set functions to get position(coordinates) by rotaton angle. In this section, I get DH parameters from UDRF file and set them to be symbols. T0_3 is a usable variable of next section so I calculate it here.
-* The third section is the Inverse Kinematic, that's mean get angle based on position here. In this section, I use knowledge described up to get theta1-3 and calculate rotation matrix R0_3, then Inv R0_3 get R3_6. Finally get all 6 theta. Utilize IK_debug.py, I make the error to be not very high. It's very important to separate when theta5>0 and theta5<0. Different pose will get same position but different error. If we can define the pose of joint5, we'll know the pose of joint4.
-![alt text][image11]
+* The first section is to set some function as like rot function for calculate Rotation Matrix with x,y and z axis. I make a new file "defined_var.py" to seperate some DH process. Also I define some variable to save DH parameters which will be used in IK, instead of dict "s". With "Matrix" of "Sympy" I can set a model, then feed in datas with "evalf(subs())"   
+  
+* The second section is the Forward Kinematic, that's mean I should set functions to get position(coordinates) by rotaton angle. In this section, I get DH parameters from UDRF file and set them to be symbols. To get help of the "defined_var.py", I set most caculation of Forward Kinematic out of the for loop in "IK_server.py".  
+  
+* The third section is the Inverse Kinematic, that's mean get angle based on position here.  
+In this section, I use knowledge described up to get theta1-3 and calculate rotation matrix R0_3, here use "atan2" to get angle when sin and cos of this angle have been known.   
+Then transpose R0_3 so that get R3_6. Caculation of R3_6 need the real-time value of theta1-3. So I turn R3_6 into numpy data after caculated. "R3_6 = np.array(R0_3_T * Rrpy).astype(np.float64)".   
+Finally get last 3 theta, and make all of thetas into numpy(float64). Utilize IK_debug.py, I make the error to be not very high. It's very important to separate when "sin(theta5)>0" and "sin(theta5)<0". That's because there is different pose for the grab to reach the same position. Different pose will get different error. If we can define the pose of joint5, we'll know the pose of joint4.  
+
+![alt text][image11]  
+
+#### 2.Extended work
+I'll continue the job of this project. I think this [paper](https://arxiv.org/abs/1801.10425) is a good choice to refer.
