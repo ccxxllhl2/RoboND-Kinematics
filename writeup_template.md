@@ -27,7 +27,11 @@
 [image8]: ./misc_images/theta3.png
 [image9]: ./misc_images/rr.png
 [image10]: ./misc_images/R36.png
-[image11]: ./misc_images/error.png
+[image11]: ./misc_images/R36_detail.png
+[image12]: ./misc_images/error.png
+[image13]: ./misc_images/test01.png
+[image14]: ./misc_images/test02.png
+[image15]: ./misc_images/test03.png
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/972/view) Points
 ### Here I will describe each step I have done to achieve key points.
@@ -142,9 +146,32 @@ Then use the position of WC and end effector (EE) to calculate the first 3 joint
 ![alt text][image7]
 ![alt text][image8]
 
-Next use the rotation matrix and first 3 theta to calculate the last joint variables(theta4, theta5, theta6). To do this, first transform the DH matrix to be this.
+Use the rotation matrix and first 3 theta to calculate the last joint variables(theta4, theta5, theta6).  
+* To do this, first transform the DH matrix to be this, and you should see the rotation part is just [0:3,0:3]
 ![alt text][image9]
+* Then take out R0_3 from T0_3, to do this just get T0_3[0:3,0:3]
+* Next transpose R0_3 and time with Rrpy(R0_6), that is the R3_6. 
 ![alt text][image10]
+* The entire R3_6 is as below.
+![alt text][image11]
+* Get all six rotation parameters
+
+param | value
+  --- | ---
+  r12 | R3_6[0, 1]
+  r13 | R3_6[0, 2]
+  r21 | R3_6[1, 0]
+  r22 | R3_6[1, 1]
+  r23 | R3_6[1, 2]
+  r32 | R3_6[2, 1]
+  r33 | R3_6[2, 2]
+
+* Caculate theta5 as below  
+$ \theta5 = atan2(sqrt(r13**2 + r33**2), r23) $
+
+* Caculate theta4 and theta6 by pose of theta5, the detail will be talked in next section  
+$ \theta4 = atan2(-r33, r13) $
+$ \theta6 = atan2(r22, -r21) $
 
 ### Project Implementation
 
@@ -160,7 +187,22 @@ In this section, I use knowledge described up to get theta1-3 and calculate rota
 Then transpose R0_3 so that get R3_6. Caculation of R3_6 need the real-time value of theta1-3. So I turn R3_6 into numpy data after caculated. "R3_6 = np.array(R0_3_T * Rrpy).astype(np.float64)".   
 Finally get last 3 theta, and make all of thetas into numpy(float64). Utilize IK_debug.py, I make the error to be not very high. It's very important to separate when "sin(theta5)>0" and "sin(theta5)<0". That's because there is different pose for the grab to reach the same position. Different pose will get different error. If we can define the pose of joint5, we'll know the pose of joint4.  
 
-![alt text][image11]  
+![alt text][image12]  
 
-#### 2.Extended work
+#### 2.Show the simulated environment and how my code worked.
+Finaly my code get a not bad result, 9/10 pick and place.  
+
+![alt text][image13]
+![alt text][image14]
+
+Even more, I found it could do other jobs :)
+
+![alt text][image15]
+
+#### 3.Problems
+In my tests, two problems will cause failure of pick and place:
+* grab fail: refer to class, we can modify /src/trajectory_sampler.cpp file, add "ros::Duration(2.0).sleep();", Advice is add more duration. Then do catkin_make.
+* grab success but drop when arm moving: I have no idea now, but I think modify the limit range of grab's movement may be solve this.
+
+#### 4.Extended work
 I'll continue the job of this project. I think this [paper](https://arxiv.org/abs/1801.10425) is a good choice to refer.
