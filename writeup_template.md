@@ -167,7 +167,7 @@ param | value
   r33 | R3_6[2, 2]
 
 * Caculate theta5 as below  
-$ \theta5 = atan2(sqrt(r13**2 + r33**2), r23) $
+$ \theta5 = atan2(sqrt(r13\*r13 + r33\*r13), r23) $
 
 * Caculate theta4 and theta6 by pose of theta5, the detail will be talked in next section  
 $ \theta4 = atan2(-r33, r13) $
